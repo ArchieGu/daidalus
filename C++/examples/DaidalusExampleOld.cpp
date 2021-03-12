@@ -44,10 +44,8 @@ TERMINATION OF THIS AGREEMENT.
  **/
 
 #include "Daidalus.h"
-#include <fstream>
-#include <string>
+
 using namespace larcfm;
-using namespace std;
 
 void printDetection(Daidalus& daa) {
   // Aircraft at index 0 is ownship
@@ -289,24 +287,14 @@ void printHorizontalHazardZones(Daidalus& daa) {
   }
 }
 
-//int main(int argc, char* argv[]) {
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
   std::cout << "##" << std::endl;
   std::cout << "## " << Daidalus::release() << std::endl;
   std::cout << "##\n" << std::endl;
   bool verbose = false;
-  // default test case
-  // ifstream Intruder("/home/qgu4/RTCA DO-365 MOPS_Test_Cases/overtaking/O1/Intruder/O1_Truth_TVInt1.csv");
-  // ifstream Ownship("/home/qgu4/RTCA DO-365 MOPS_Test_Cases/overtaking/O1/Ownship/O1_Truth_TVOwn.csv");
-  // default LogFile
-  // ofstream LogFile("logfiles/overtaking_O1.log");
-  
+
   // Declare an empty Daidalus object
   Daidalus daa;
-  
-  std::string input_file = "";
-  std::string output_file = "";
-  std::string conf = "";
 
   // A Daidalus object can be configured either programmatically or by using a configuration file.
   for (int a=1;a < argc; ++a) {
@@ -343,126 +331,88 @@ int main(int argc, char* argv[]){
       std::cerr << "  --config <configuration-file> | no_sum | nom_a | nom_b | cd3d | tcasii\n\tLoad <configuration-file>" << std::endl;
       std::cerr << "  --verbose\n\tPrint more information" << std::endl;
       exit(0);
-    } else if (startsWith(arga, "--testcase") || startsWith(arga, "-testcase")){
-      arga = argv[++a];
-      string base_filename = arga.substr(arga.find_last_of("/") + 1);
-      string intruder_test = arga + "/" + "Intruder" + "/" + base_filename + "_ADSB_Tracker_TVInt1.csv";
-      string ownship_test = arga + "/" + "Ownship" + "/" + base_filename + "_Tracker_TVOwn.csv";
-      cout << "base_filename:" << base_filename << endl;
-      cout << "intruder file:" << intruder_test << endl;
-      cout << "ownship file:" << ownship_test << endl;
-      ifstream Intruder(intruder_test); ifstream Ownship(ownship_test);
-      ofstream LogFile("logfiles/" + base_filename + ".log");
-      if (daa.numberOfAlerters()==0) {
-        // If no alerter has been configured, configure alerters as in
-        // DO_365B Phase I, Phase II, and Non-Cooperative, with SUM
-        daa.set_DO_365B();
-      }
-
-      // initial parameters
-      string ToA_intruder; string ICAO_intruder; string latitude_intruder; string longitude_intruder; string altitude_intruder; string VS_intruder; string Trk_intruder; string Gs_intruder;
-      string ToA_ownship; string ICAO_ownship; string latitude_ownship; string longitude_ownship; string altitude_ownship; string VS_ownship; string Trk_ownship; string Gs_ownship;
-
-      //initial start time
-      getline(Intruder, ToA_intruder, ',');
-      double t = stof(ToA_intruder);
-      
-      while (Intruder.good() && Ownship.good()){
-
-        // for all times t (in this example, only one time step is illustrated)
-        // Add ownship state at time t
-        getline(Ownship, ToA_ownship, ',');
-        getline(Ownship, ICAO_ownship, ',');
-        getline(Ownship, latitude_ownship, ',');
-        getline(Ownship, longitude_ownship, ',');
-        getline(Ownship, altitude_ownship, ',');
-        getline(Ownship, VS_ownship, ',');
-        getline(Ownship, Trk_ownship, ',');
-        getline(Ownship, Gs_ownship, '\n');
-
-        if((int)ToA_ownship[0] >= 48 && (int)ToA_ownship[0] <= 57 && stof(ToA_ownship) == t){
-
-                std::cout << "latitude_ownship:" << latitude_ownship << endl;
- 	        std::cout << "longitude_ownship:" << longitude_ownship << endl;
-	        std::cout << "altitude_ownship:" << altitude_ownship << endl;
-	        std::cout << "VS_ownship:" << VS_ownship << endl;
-	        std::cout << "Gs_ownship:" << Gs_ownship << endl;
-	        std::cout << "Trk_ownship:" << Trk_ownship << endl;
-
-	  Position so = Position::makeLatLonAlt(stof(latitude_ownship),"deg", stof(longitude_ownship),"deg", stof(altitude_ownship),"ft");
-          Velocity vo = Velocity::makeTrkGsVs(stof(Trk_ownship),"deg", stof(Gs_ownship),"knot", stof(VS_ownship),"fpm");
-          daa.setOwnshipState("ownship",so,vo,t);
-        }
-        else
-          continue;
-        
-        // In case of multiple alerting logic (assuming ownship_centric is set to true), e.g.,
-        int alerter_idx = 1;
-        daa.setAlerterIndex(0,alerter_idx);
-
-        // Add all traffic states at time t
-        // ... some traffic ...
-        getline(Intruder, ToA_intruder, ',');
-        getline(Intruder, ICAO_intruder, ',');
-        getline(Intruder, latitude_intruder, ',');
-        getline(Intruder, longitude_intruder, ',');
-        getline(Intruder, altitude_intruder, ',');
-        getline(Intruder, VS_intruder, ',');
-        getline(Intruder, Trk_intruder, ',');
-        getline(Intruder, Gs_intruder, '\n');
-        if((int)ToA_intruder[0] >= 48 && (int)ToA_intruder[0] <= 57){
-          Position si = Position::makeLatLonAlt(stof(latitude_intruder),"deg", stof(longitude_intruder),"deg", stof(altitude_intruder),"ft");
-          Velocity vi = Velocity::makeTrkGsVs(stof(Trk_intruder),"deg", stof(Gs_intruder),"knot", stof(VS_intruder),"fpm");
-          int ac_idx = daa.addTrafficState("intruder",si,vi);
-	
-	  int alter_idx = 1;
-          daa.setAlerterIndex(ac_idx,alter_idx);
-        }
-
-        // After all traffic has been added ...
-
-        // Set wind vector (TO direction)
-        Velocity wind = Velocity::makeTrkGsVs(45,"deg", 10,"knot", 0,"fpm");
-        daa.setWindVelocityTo(wind);
-
-        // Print Daidalus Object
-        if (verbose) {
-          std::cout << daa.toString() << std::endl;
-        }
-
-        // Print information about the Daidalus Object
-        std::cout << "Number of Aircraft: " << daa.numberOfAircraft() << std::endl;
-        std::cout << "Last Aircraft Index: " << daa.lastTrafficIndex() << std::endl;
-        std::cout <<  std::endl;
-
-        // Detect conflicts with every traffic aircraft
-        printDetection(daa);
-
-        // Call alerting logic for each traffic aircraft.
-        printAlerts(daa);
-
-        // Print bands information
-        printBands(daa);
-
-        if (verbose) {
-          // Print horizontal contours (for display purposes only)
-          printHorizontalContours(daa);
-
-          // Print horizontal protected areas (for display purposes only)
-          printHorizontalHazardZones(daa);
-        }
-
-        LogFile << daa.toString();
-        // go to next time step
-        t += 1.0f;
-      }
-
-      // after all time traffic calculated done, close the LogFile
-      LogFile.close();
-    }
-    else {
+    } else {
       std::cerr << "Unknown option " << arga << std::endl;
       exit(0);
     }
-  } 
+  }
+
+  if (daa.numberOfAlerters()==0) {
+    // If no alerter has been configured, configure alerters as in
+    // DO_365B Phase I, Phase II, and Non-Cooperative, with SUM
+    daa.set_DO_365B();
+  }
+
+  double t = 0.0;
+
+  // for all times t (in this example, only one time step is illustrated)
+  // Add ownship state at time t
+  Position so = Position::makeLatLonAlt(33.95,"deg", -96.7,"deg", 8700.0,"ft");
+  Velocity vo = Velocity::makeTrkGsVs(206.0,"deg", 151.0,"knot", 0.0,"fpm");
+  daa.setOwnshipState("ownship",so,vo,t);
+
+  // In case of SUM, set uncertainties of ownhip aircraft
+  // daa.setHorizontalPositionUncertainty(0, s_EW, s_NS, s_EN, units);
+  // daa.setVerticalPositionUncertainty(0, sz, units);
+  // daa.setHorizontalVelocityUncertainty(0, v_EW, v_NS, v_EN, units);
+  // daa.setVerticalSpeedUncertainty(0, vz, units);
+
+  // In case of multiple alerting logic (assuming ownship_centric is set to true), e.g.,
+  int alerter_idx = 1;
+  daa.setAlerterIndex(0,alerter_idx);
+
+  // Add all traffic states at time t
+  // ... some traffic ...
+  Position si = Position::makeLatLonAlt(33.86191658,"deg", -96.73272601,"deg", 9000.0,"ft");
+  Velocity vi = Velocity::makeTrkGsVs(0.0,"deg", 210.0,"knot", 0,"fpm");
+  int ac_idx = daa.addTrafficState("intruder",si,vi);
+  // ... more traffic ...
+
+  // In case of SUM, set uncertainties of ac_idx'th traffic aircraft
+  // daa.setHorizontalPositionUncertainty(ac_idx, s_EW, s_NS, s_EN, units_string);
+  // daa.setVerticalPositionUncertainty(ac_idx, sz, units_string);
+  // daa.setHorizontalVelocityUncertainty(ac_idx, v_EW, v_NS, v_EN, units_string);
+  // daa.setVerticalSpeedUncertainty(ac_idx, vz, units_string);
+
+  // In case of multiple alerting logic (assuming ownship_centric is set to false), e.g.,
+  alerter_idx = 1;
+  daa.setAlerterIndex(ac_idx,alerter_idx);
+
+  // ... more traffic ...
+
+  // After all traffic has been added ...
+
+  // Set wind vector (TO direction)
+  Velocity wind = Velocity::makeTrkGsVs(45,"deg", 10,"knot", 0,"fpm");
+  daa.setWindVelocityTo(wind);
+
+  // Print Daidalus Object
+  if (verbose) {
+    std::cout << daa.toString() << std::endl;
+  }
+
+  // Print information about the Daidalus Object
+  std::cout << "Number of Aircraft: " << daa.numberOfAircraft() << std::endl;
+  std::cout << "Last Aircraft Index: " << daa.lastTrafficIndex() << std::endl;
+  std::cout <<  std::endl;
+
+  // Detect conflicts with every traffic aircraft
+  printDetection(daa);
+
+  // Call alerting logic for each traffic aircraft.
+  printAlerts(daa);
+
+  // Print bands information
+  printBands(daa);
+
+  if (verbose) {
+    // Print horizontal contours (for display purposes only)
+    printHorizontalContours(daa);
+
+    // Print horizontal protected areas (for display purposes only)
+    printHorizontalHazardZones(daa);
+  }
+  // go to next time step
+
 }
+
